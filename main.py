@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker
 import numpy as np
 
-from pendulum import DoublePendulum, calculate_lyapunov_exponents, solve_pendulum
+from pendulum import lyapunov_exponent_of_pendulum
 
 jax.config.update("jax_enable_x64", True)
 
@@ -17,6 +17,7 @@ h0 = 0.01
 t_max = 100
 
 size = 3000
+row_batch_size = 100
 num_sample = 9
 eps = np.pi / size * 1e-3
 
@@ -93,27 +94,13 @@ def main():
     )
     t_sample = tuple(t_sample.tolist())
 
-    solve_all_fn = jax.vmap(
-        jax.vmap(jax.jit(partial(solve_pendulum, t_sample=t_sample, h0=h0)))
+    lyap_exp_fn = partial(
+        lyapunov_exponent_of_pendulum, t_sample=t_sample, h0=h0, eps=eps
     )
-
-    pendulum_set1 = DoublePendulum(
-        theta1 - eps / 2,
-        theta2 - eps / 2,
-        jnp.zeros_like(theta1),
-        jnp.zeros_like(theta2),
+    lyap_exp = jax.lax.map(
+        jax.vmap(lyap_exp_fn), (theta1, theta2), batch_size=row_batch_size
     )
-    sol1 = solve_all_fn(pendulum_set1)
-
-    pendulum_set2 = DoublePendulum(
-        theta1 + eps / 2,
-        theta2 + eps / 2,
-        jnp.zeros_like(theta1),
-        jnp.zeros_like(theta2),
-    )
-    sol2 = solve_all_fn(pendulum_set2)
-
-    lyap_exp = calculate_lyapunov_exponents(jnp.asarray(t_sample), sol1, sol2, eps)
+    render(lyap_exp, "thing.png", show_axes=False)
 
     os.makedirs("outputs", exist_ok=True)
     np.savez_compressed(

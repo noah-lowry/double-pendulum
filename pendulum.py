@@ -73,7 +73,32 @@ def calculate_lyapunov_exponents(t_sample, sol1, sol2, eps):
         sol1.ys.theta1 - sol2.ys.theta1, sol1.ys.theta2 - sol2.ys.theta2
     )
     lyap_exp = (
-        jnp.einsum("t,xyt->xy", t_sample, jnp.log(euclidean_err) - np.log(eps))
+        jnp.einsum("t,t...->...", t_sample, jnp.log(euclidean_err) - np.log(eps))
         / jnp.square(t_sample).sum()
     )
+    return lyap_exp
+
+
+@jax.jit(static_argnames=("t_sample", "h0", "eps"))
+def lyapunov_exponent_of_pendulum(thetas, t_sample, h0, eps):
+    theta1, theta2 = thetas
+
+    pendulum_set1 = DoublePendulum(
+        theta1 - eps / 2,
+        theta2 - eps / 2,
+        jnp.zeros_like(theta1),
+        jnp.zeros_like(theta2),
+    )
+    sol1 = solve_pendulum(pendulum_set1, t_sample, h0)
+
+    pendulum_set2 = DoublePendulum(
+        theta1 + eps / 2,
+        theta2 + eps / 2,
+        jnp.zeros_like(theta1),
+        jnp.zeros_like(theta2),
+    )
+    sol2 = solve_pendulum(pendulum_set2, t_sample, h0)
+
+    lyap_exp = calculate_lyapunov_exponents(jnp.asarray(t_sample), sol1, sol2, eps)
+
     return lyap_exp
