@@ -16,7 +16,7 @@ jax.config.update("jax_enable_x64", True)
 h0 = 0.01
 t_max = 100
 
-size = 300
+size = 3000
 num_sample = 9
 eps = np.pi / size * 1e-3
 
