@@ -12,7 +12,6 @@ import numpy as np
 from pendulum import DoublePendulum, calculate_lyapunov_exponents, solve_pendulum
 
 jax.config.update("jax_enable_x64", True)
-matplotlib.use("QtAgg")
 
 h0 = 0.01
 t_max = 100
@@ -131,7 +130,6 @@ def main():
     )
 
     render(lyap_exp, filename=f"outputs/lyapunov_exponent_map_{run_name}.png")
-    render(lyap_exp)
 
 
 if __name__ == "__main__":
