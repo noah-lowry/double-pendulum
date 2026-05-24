@@ -1,3 +1,4 @@
+from functools import partial
 from fractions import Fraction
 
 import os
@@ -7,9 +8,8 @@ import jax.numpy as jnp
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker
-from diffrax import Dopri8, ODETerm, PIDController, SaveAt, diffeqsolve
 
-from pendulum import DoublePendulum, system_derivative
+from pendulum import DoublePendulum, solve_pendulum, calculate_lyapunov_exponents
 
 jax.config.update("jax_enable_x64", True)
 matplotlib.use("QtAgg")
@@ -19,20 +19,9 @@ t_max = 100
 
 size = 300
 num_sample = 9
-eps = jnp.pi / size * 1e-3
+eps = np.pi / size * 1e-3
 
 run_name = f"{size}x{size}@{t_max}"
-
-def calculate_lyapunov_exponents(sol1, sol2):
-    ts = jnp.logspace(jnp.log(0.01) / jnp.log(1.2), jnp.log(t_max) / jnp.log(1.2), num_sample, base=1.2)
-    euclidean_err = jnp.hypot(
-        sol1.ys.theta1 - sol2.ys.theta1, sol1.ys.theta2 - sol2.ys.theta2
-    )
-    lyap_exp = (
-        jnp.einsum("t,xyt->xy", ts, jnp.log(euclidean_err) - jnp.log(eps))
-        / jnp.square(ts).sum()
-    )
-    return lyap_exp
 
 def render(arr, filename=None):
     if filename is not None:
@@ -68,7 +57,6 @@ def render(arr, filename=None):
         interpolation="none",
     )
 
-    # TODO: make this axis shit better
     def get_tick_fmt(x, *_):
         axis_fractions_of_pi = [
             Fraction(2 * i, num_axis_pts - 1) - 1 for i in range(num_axis_pts)
@@ -100,36 +88,16 @@ def render(arr, filename=None):
     plt.show()
 
 
-def solve_pendulum(pendulum):
-    t_sample = jnp.logspace(jnp.log(0.01) / jnp.log(1.2), jnp.log(t_max) / jnp.log(1.2), num_sample, base=1.2)
-
-    term = ODETerm(lambda t, y, args: system_derivative(y))
-    solver = Dopri8()
-    saveat = SaveAt(ts=t_sample)
-    stepsize_controller = PIDController(rtol=1e-6, atol=1e-8)
-
-    sol1 = diffeqsolve(
-        term,
-        solver,
-        t0=0,
-        t1=t_sample[-1],
-        dt0=h0,
-        y0=pendulum,
-        saveat=saveat,
-        stepsize_controller=stepsize_controller,
-        max_steps=int(t_max / h0)
-    )
-    return sol1
-
-
 def main():
     theta1, theta2 = jnp.meshgrid(
         jnp.linspace(-jnp.pi, jnp.pi, size),
         jnp.linspace(-jnp.pi, jnp.pi, size),
         indexing="xy",
     )
+    t_sample = np.logspace(np.log(0.01) / np.log(1.2), np.log(t_max) / np.log(1.2), num_sample, base=1.2)
+    t_sample = tuple(t_sample.tolist())
 
-    solve_all_fn = jax.vmap(jax.vmap(jax.jit(solve_pendulum)))
+    solve_all_fn = jax.vmap(jax.vmap(jax.jit(partial(solve_pendulum, t_sample=t_sample, h0=h0))))
 
     pendulum_set1 = DoublePendulum(
         theta1 - eps / 2,
@@ -147,7 +115,7 @@ def main():
     )
     sol2 = solve_all_fn(pendulum_set2)
 
-    lyap_exp = calculate_lyapunov_exponents(sol1, sol2)
+    lyap_exp = calculate_lyapunov_exponents(jnp.asarray(t_sample), sol1, sol2, eps)
 
     os.makedirs("outputs", exist_ok=True)
     np.savez_compressed(
