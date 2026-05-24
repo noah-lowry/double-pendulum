@@ -1,5 +1,6 @@
 from fractions import Fraction
 
+import os
 import numpy as np
 import jax
 import jax.numpy as jnp
@@ -14,11 +15,13 @@ jax.config.update("jax_enable_x64", True)
 matplotlib.use("QtAgg")
 
 h0 = 0.01
-t_max = 100.0
+t_max = 100
 
-size = 100
+size = 300
 num_sample = 9
 eps = jnp.pi / size * 1e-3
+
+run_name = f"{size}x{size}@{t_max}"
 
 def calculate_lyapunov_exponents(sol1, sol2):
     ts = jnp.logspace(jnp.log(0.01) / jnp.log(1.2), jnp.log(t_max) / jnp.log(1.2), num_sample, base=1.2)
@@ -146,14 +149,15 @@ def main():
 
     lyap_exp = calculate_lyapunov_exponents(sol1, sol2)
 
+    os.makedirs("outputs", exist_ok=True)
     np.savez_compressed(
-        "lyapunov_exponents.npz",
+        f"outputs/data_{run_name}.npz",
         theta1=theta1,
         theta2=theta2,
         lyap_exp=lyap_exp,
     )
 
-    render(lyap_exp, filename="double-pendulum.png")
+    render(lyap_exp, filename=f"outputs/lyapunov_exponent_map_{run_name}.png")
     render(lyap_exp)
 
 
