@@ -1,10 +1,9 @@
 from dataclasses import dataclass
 from functools import partial
 
-import numpy as np
 import jax
 import jax.numpy as jnp
-
+import numpy as np
 from diffrax import Dopri8, ODETerm, PIDController, SaveAt, diffeqsolve
 
 
@@ -63,7 +62,7 @@ def solve_pendulum(pendulum, t_sample, h0):
         y0=pendulum,
         saveat=saveat,
         stepsize_controller=stepsize_controller,
-        max_steps=int(t_sample[-1] / h0)
+        max_steps=int(t_sample[-1] / h0),
     )
     return sol1
 

@@ -1,15 +1,15 @@
-from functools import partial
-from fractions import Fraction
-
 import os
-import numpy as np
+from fractions import Fraction
+from functools import partial
+
 import jax
 import jax.numpy as jnp
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker
+import numpy as np
 
-from pendulum import DoublePendulum, solve_pendulum, calculate_lyapunov_exponents
+from pendulum import DoublePendulum, calculate_lyapunov_exponents, solve_pendulum
 
 jax.config.update("jax_enable_x64", True)
 matplotlib.use("QtAgg")
@@ -22,6 +22,7 @@ num_sample = 9
 eps = np.pi / size * 1e-3
 
 run_name = f"{size}x{size}@{t_max}"
+
 
 def render(arr, filename=None):
     if filename is not None:
@@ -94,10 +95,14 @@ def main():
         jnp.linspace(-jnp.pi, jnp.pi, size),
         indexing="xy",
     )
-    t_sample = np.logspace(np.log(0.01) / np.log(1.2), np.log(t_max) / np.log(1.2), num_sample, base=1.2)
+    t_sample = np.logspace(
+        np.log(0.01) / np.log(1.2), np.log(t_max) / np.log(1.2), num_sample, base=1.2
+    )
     t_sample = tuple(t_sample.tolist())
 
-    solve_all_fn = jax.vmap(jax.vmap(jax.jit(partial(solve_pendulum, t_sample=t_sample, h0=h0))))
+    solve_all_fn = jax.vmap(
+        jax.vmap(jax.jit(partial(solve_pendulum, t_sample=t_sample, h0=h0)))
+    )
 
     pendulum_set1 = DoublePendulum(
         theta1 - eps / 2,
