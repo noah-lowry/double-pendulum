@@ -23,30 +23,21 @@ eps = np.pi / size * 1e-3
 run_name = f"{size}x{size}@{t_max}"
 
 
-def render(arr, filename=None):
-    if filename is not None:
-        dpi = 100
+def render(arr, filename, show_axes=True):
+    dpi = 100
+    num_axis_pts = 9
+
+    if show_axes:
+        fig, ax = plt.subplots(
+            figsize=(arr.shape[1] / dpi, arr.shape[0] / dpi), dpi=dpi
+        )
+        fig.tight_layout()
+    else:
         fig = plt.figure(figsize=(arr.shape[1] / dpi, arr.shape[0] / dpi), dpi=dpi)
         ax = fig.add_axes((0, 0, 1, 1))
-        ax.imshow(
-            arr,
-            cmap="turbo",
-            extent=(-jnp.pi, jnp.pi, -jnp.pi, jnp.pi),
-            aspect="equal",
-            origin="lower",
-            interpolation="nearest",
-        )
         ax.set_axis_off()
         ax.set_facecolor("black")
         fig.patch.set_facecolor("black")
-        fig.savefig(filename, dpi=dpi, bbox_inches=None, pad_inches=0)
-        plt.close(fig)
-        return
-
-    num_axis_pts = 7
-
-    fig, ax = plt.subplots()
-    fig.tight_layout()
 
     ax.imshow(
         arr,
@@ -82,10 +73,13 @@ def render(arr, filename=None):
             return rf"$\frac{{-\pi}}{{{frac.denominator}}}$"
         return rf"$\frac{{{frac.numerator} \pi}}{{{frac.denominator}}}$"
 
-    for axis in (ax.xaxis, ax.yaxis):
-        axis.set_major_locator(matplotlib.ticker.MultipleLocator(jnp.pi / 4))
-        axis.set_major_formatter(matplotlib.ticker.FuncFormatter(get_tick_fmt))
-    plt.show()
+    if show_axes:
+        for axis in (ax.xaxis, ax.yaxis):
+            axis.set_major_locator(matplotlib.ticker.MultipleLocator(jnp.pi / 4))
+            axis.set_major_formatter(matplotlib.ticker.FuncFormatter(get_tick_fmt))
+
+    fig.savefig(filename, dpi=dpi, bbox_inches=None, pad_inches=0)
+    plt.close(fig)
 
 
 def main():
@@ -130,6 +124,7 @@ def main():
     )
 
     render(lyap_exp, filename=f"outputs/lyapunov_exponent_map_{run_name}.png")
+    render(lyap_exp, filename=f"outputs/final_{run_name}.png", show_axes=False)
 
 
 if __name__ == "__main__":
