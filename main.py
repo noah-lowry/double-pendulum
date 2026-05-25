@@ -16,9 +16,9 @@ jax.config.update("jax_enable_x64", True)
 h0 = 0.01
 t_max = 100
 
-size = 3000
-row_batch_size = 100
-num_sample = 9
+size = 12000
+row_batch_size = 750
+num_sample = 15
 eps = np.pi / size * 1e-3
 
 run_name = f"{size}x{size}@{t_max}"
